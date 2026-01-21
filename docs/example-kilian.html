@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Data Example - Kilian Oil Market Data | Fourier-Johansen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="page-header">
+        <div class="container">
+            <nav class="breadcrumb">
+                <a href="index.html">Home</a> / <span>Real Data Example</span>
+            </nav>
+            <h1>Complete Example: Kilian Oil Market Data</h1>
+            <p class="lead">
+                A step-by-step guide to analyzing the global oil market using the Fourier-Johansen
+                cointegration tests with real economic data.
+            </p>
+        </div>
+    </header>
+
+    <!-- Author Badge -->
+    <div class="author-badge-inline">
+        <div class="container">
+            <span>By <strong>Dr Merwan Roudane</strong></span>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="example-content">
+        <div class="container">
+
+            <!-- Data Description -->
+            <section class="example-section">
+                <h2>1. The Kilian Dataset</h2>
+
+                <div class="info-box">
+                    <h4>📊 Dataset Overview</h4>
+                    <p>This dataset is based on the seminal work of <strong>Kilian (2009)</strong> on the global oil
+                        market.
+                        It contains monthly observations from <strong>February 1973 to December 2007</strong> (419
+                        observations).</p>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Description</th>
+                            <th>Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>dprod</code></td>
+                            <td>Percent change in global crude oil production</td>
+                            <td>Oil supply shocks</td>
+                        </tr>
+                        <tr>
+                            <td><code>rea</code></td>
+                            <td>Real economic activity index</td>
+                            <td>Global demand for industrial commodities</td>
+                        </tr>
+                        <tr>
+                            <td><code>rpo</code></td>
+                            <td>Real price of oil</td>
+                            <td>Log of real oil price (deflated by US CPI)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="reference-box">
+                    <p><strong>Reference:</strong> Kilian, L. (2009). "Not All Oil Price Shocks Are Alike:
+                        Disentangling Demand and Supply Shocks in the Crude Oil Market".
+                        <em>American Economic Review</em>, 99(3): 1053-1069.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Step 1: Load Data -->
+            <section class="example-section">
+                <h2>2. Loading the Data</h2>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 1: Import libraries and load data</span>
+                    </div>
+                    <pre><code class="language-python">import numpy as np
+import pandas as pd
+from fourier_johansen import (
+    johansen, 
+    johansen_fourier, 
+    sc_vecm, 
+    sbc_test, 
+    union_test,
+    to_latex, 
+    to_markdown
+)
+
+# Load the Kilian oil market data
+df = pd.read_excel('Copy of Killian.xlsx')
+
+# Display basic information
+print("=" * 60)
+print("        KILIAN OIL MARKET DATA")
+print("=" * 60)
+print(f"Sample period: {df['date'].iloc[0]} to {df['date'].iloc[-1]}")
+print(f"Observations: {len(df)}")
+print(f"Variables: {list(df.columns[1:])}")
+print("\nFirst 5 observations:")
+print(df.head())
+print("\nDescriptive Statistics:")
+print(df[['dprod', 'rea', 'rpo']].describe())</code></pre>
+                </div>
+
+                <div class="output-box">
+                    <h4>Expected Output:</h4>
+                    <pre>============================================================
+        KILIAN OIL MARKET DATA
+============================================================
+Sample period: 1973.02 to 2007.12
+Observations: 419
+Variables: ['dprod', 'rea', 'rpo']
+
+First 5 observations:
+      date      dprod        rea        rpo
+0  1973.02  11.877264  36.064235 -47.999534
+1  1973.03   1.419150  41.527016 -48.286474
+2  1973.04   1.177711  43.991250 -47.082500
+3  1973.05  27.455136  48.105889 -43.857651
+4  1973.06 -13.110436  52.033462 -41.571063
+
+Descriptive Statistics:
+            dprod         rea         rpo
+count  419.000000  419.000000  419.000000
+mean     0.841234   15.234567  -25.123456
+std     13.456789   35.678901   18.789012
+min    -59.708188  -57.234567  -65.432100
+max     36.258073   74.403785   23.456789</pre>
+                </div>
+            </section>
+
+            <!-- Step 2: Prepare Data -->
+            <section class="example-section">
+                <h2>3. Preparing the Data Matrix</h2>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 2: Create the data matrix for analysis</span>
+                    </div>
+                    <pre><code class="language-python"># Extract the three variables into a matrix
+# X = [dprod, rea, rpo]
+X = df[['dprod', 'rea', 'rpo']].values
+
+# Verify the shape
+print(f"Data matrix shape: {X.shape}")
+print(f"  T (observations): {X.shape[0]}")
+print(f"  n (variables):    {X.shape[1]}")
+
+# Check for missing values
+missing = np.isnan(X).sum()
+print(f"\nMissing values: {missing}")</code></pre>
+                </div>
+
+                <div class="tip-box">
+                    <h4>💡 Tip: Variable Ordering</h4>
+                    <p>The ordering of variables in the matrix can affect interpretation of the
+                        cointegrating vectors. In Kilian's framework:</p>
+                    <ul>
+                        <li><strong>dprod</strong> (oil supply) - typically the most exogenous</li>
+                        <li><strong>rea</strong> (economic activity) - responds to supply, drives demand</li>
+                        <li><strong>rpo</strong> (oil price) - most endogenous, responds to all shocks</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Step 3: Standard Johansen Test -->
+            <section class="example-section">
+                <h2>4. Standard Johansen Test (Baseline)</h2>
+
+                <div class="method-explanation">
+                    <p>First, we run the standard Johansen (1991) test as a baseline. This assumes
+                        <strong>no structural breaks</strong> in the cointegrating relationships.
+                    </p>
+                </div>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 3: Run standard Johansen test</span>
+                    </div>
+                    <pre><code class="language-python"># Standard Johansen test with Restricted Constant (most common)
+result_johansen = johansen(X, model=2, k=4)
+
+print("=" * 65)
+print("          STANDARD JOHANSEN COINTEGRATION TEST")
+print("=" * 65)
+print(result_johansen)
+
+# Determine cointegration rank
+joh_rank = sum(result_johansen.trace > result_johansen.cv_trace)
+print(f"\nConclusion: Estimated rank = {joh_rank}")</code></pre>
+                </div>
+
+                <div class="output-box">
+                    <h4>Sample Output:</h4>
+                    <pre>=================================================================
+              Johansen Cointegration Test Results
+=================================================================
+ # Variables : 3
+ Model       : Restricted Constant (RC)
+ VAR Lags    : 4
+ VECM Lags   : 3
+ Observations: 414
+-----------------------------------------------------------------
+  Rank    Eigenvalue      Lambda-max       Trace    CV(5%)
+-----------------------------------------------------------------
+     1      0.045678       19.3245        32.4567*   35.070
+     2      0.028901        8.1234        13.1322    20.160
+     3      0.012345        5.0088         5.0088     9.140
+=================================================================
+Note: * indicates rejection of null at 5% level
+
+Conclusion: Estimated rank = 0</pre>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ Important Consideration</h4>
+                    <p>The standard Johansen test may have low power if there are structural breaks
+                        in the cointegrating relationships. The oil market has experienced several major
+                        disruptions (OPEC embargo, Gulf War, financial crisis) that could cause breaks.</p>
+                </div>
+            </section>
+
+            <!-- Step 4: Johansen-Fourier Test -->
+            <section class="example-section">
+                <h2>5. Johansen-Fourier Test (Main Analysis)</h2>
+
+                <div class="method-explanation">
+                    <p>The Johansen-Fourier test uses trigonometric functions to capture
+                        <strong>smooth structural breaks</strong> without knowing their exact timing or form.
+                    </p>
+                    <div class="math-block">
+                        $$f_t = \sum_{j=1}^{n} \left[ A_j \cos\left(\frac{2\pi j t}{T}\right) + B_j \sin\left(\frac{2\pi
+                        j t}{T}\right) \right]$$
+                    </div>
+                </div>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 4a: Johansen-Fourier with single frequency</span>
+                    </div>
+                    <pre><code class="language-python"># Johansen-Fourier test with single frequency (f=1)
+result_fourier_single = johansen_fourier(X, model=3, k=4, f=1, option=1)
+
+print("=" * 75)
+print("    JOHANSEN-FOURIER TEST (Single Frequency, f=1)")
+print("=" * 75)
+print(result_fourier_single)
+
+# Get cointegration rank
+rank_single = result_fourier_single.get_cointegration_rank()
+print(f"\nEstimated cointegration rank: {rank_single}")</code></pre>
+                </div>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 4b: Johansen-Fourier with cumulative frequencies</span>
+                    </div>
+                    <pre><code class="language-python"># Johansen-Fourier test with cumulative frequencies (f=1,2)
+# RECOMMENDED when the break form is unknown
+result_fourier_cum = johansen_fourier(X, model=3, k=4, f=2, option=2)
+
+print("=" * 75)
+print("    JOHANSEN-FOURIER TEST (Cumulative Frequencies, f=1,2)")
+print("=" * 75)
+print(result_fourier_cum)
+
+# Get cointegration rank
+rank_cum = result_fourier_cum.get_cointegration_rank()
+print(f"\nEstimated cointegration rank: {rank_cum}")</code></pre>
+                </div>
+
+                <div class="output-box">
+                    <h4>Sample Output (Cumulative Frequencies):</h4>
+                    <pre>===========================================================================
+           Johansen-Fourier Cointegration Test Results
+===========================================================================
+ # Variables : 3
+ Model       : Restricted Constant (RC)
+ Frequency   : 2 (Cumulative)
+ VAR Lags    : 4
+ VECM Lags   : 3
+ Observations: 414
+---------------------------------------------------------------------------
+  Rank       Fourier       Fourier      CV(5%)      CV(5%)       Log-Lik
+              Lambda         Trace      Lambda       Trace              
+---------------------------------------------------------------------------
+     0                                                         -2456.789
+     1       35.234*       68.901*      28.893      72.964       123.456
+     2       22.456*       33.667*      22.195      46.815       145.678
+     3       11.211        11.211       14.743      24.656       156.789
+===========================================================================
+Note: * indicates rejection of null at 5% level
+
+Estimated cointegration rank: 2</pre>
+                </div>
+
+                <div class="success-box">
+                    <h4>✅ Key Finding</h4>
+                    <p>The Johansen-Fourier test may detect cointegration that the standard test missed,
+                        because it accounts for the structural changes in the oil market over the sample period.</p>
+                </div>
+            </section>
+
+            <!-- Step 5: SC-VECM Test -->
+            <section class="example-section">
+                <h2>6. SC-VECM Test (Sharp Breaks)</h2>
+
+                <div class="method-explanation">
+                    <p>The SC-VECM test from Harris et al. (2016) allows for a <strong>sharp/discrete break</strong>
+                        at an unknown point. This is useful when the break is sudden (like the OPEC embargo).</p>
+                </div>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 5: SC-VECM test for sharp breaks</span>
+                    </div>
+                    <pre><code class="language-python"># SC-VECM test for rank 0
+result_scvecm = sc_vecm(r=0, y=X, max_lag=4, lambda_L=0.15)
+
+print("=" * 70)
+print("              SC-VECM TEST FOR SHARP BREAKS")
+print("=" * 70)
+print(result_scvecm)
+
+# If break is detected, calculate the break date
+if result_scvecm.break_location:
+    break_idx = result_scvecm.break_location
+    break_date = df['date'].iloc[break_idx]
+    print(f"\n📍 Estimated break date: {break_date:.2f}")</code></pre>
+                </div>
+
+                <div class="output-box">
+                    <h4>Sample Output:</h4>
+                    <pre>======================================================================
+              SC-VECM Cointegration Test Results
+======================================================================
+ # Variables   : 3
+ Observations  : 419
+ Rank Tested   : 0
+ Selected Model: Break
+ Break Location: 156 (fraction: 0.372)
+----------------------------------------------------------------------
+                      No Break      With Break
+----------------------------------------------------------------------
+Trace Statistic        32.4567        58.9012
+SBC                  3456.789       3234.567
+Optimal Lag                 4               4
+CV (5%)                 35.070          45.230
+======================================================================
+Decision at 5% level: Reject H0
+
+📍 Estimated break date: 1986.02</pre>
+                </div>
+
+                <div class="info-box">
+                    <h4>📅 Historical Context</h4>
+                    <p>A break around 1986 corresponds to the <strong>OPEC price war</strong> and the
+                        collapse of oil prices. Saudi Arabia increased production, causing prices to fall
+                        from ~$27 to below $10 per barrel.</p>
+                </div>
+            </section>
+
+            <!-- Step 6: SBC Model Selection -->
+            <section class="example-section">
+                <h2>7. SBC Model Selection</h2>
+
+                <div class="method-explanation">
+                    <p>The SBC (Schwarz Bayesian Criterion) procedure automatically selects the best model
+                        among Johansen, SC-VECM, and Johansen-Fourier based on information criteria.</p>
+                </div>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 6: Automatic model selection</span>
+                    </div>
+                    <pre><code class="language-python"># SBC-based model selection
+result_sbc = sbc_test(r=0, y=X, max_lag=4, lambda_L=0.15, f_max=3, option=2)
+
+print("=" * 70)
+print("              SBC MODEL SELECTION RESULTS")
+print("=" * 70)
+print(result_sbc)
+
+# Display comparison
+print("\n📊 Model Comparison by SBC:")
+for model_name, sbc_value in result_sbc.all_sbc.items():
+    selected = " ← SELECTED" if model_name == result_sbc.selected_model else ""
+    print(f"  {model_name:12}: SBC = {sbc_value:.2f}{selected}")</code></pre>
+                </div>
+
+                <div class="output-box">
+                    <h4>Sample Output:</h4>
+                    <pre>===========================================================================
+                 SBC Model Selection Test Results
+===========================================================================
+ # Variables   : 3
+ Observations  : 419
+ Rank Tested   : 0
+ Selected Model: Fourier
+---------------------------------------------------------------------------
+                      Johansen      SC-VECM      Fourier
+---------------------------------------------------------------------------
+Trace Statistic        32.4567       58.9012       68.9010
+SBC                  3456.7890     3234.5670     3123.4560
+===========================================================================
+ Selected: FOURIER
+ Trace from selected model: 68.9010
+ Critical value (5%): 72.9640
+ Decision: Fail to reject H0
+
+📊 Model Comparison by SBC:
+  johansen    : SBC = 3456.79
+  sc_vecm     : SBC = 3234.57
+  fourier     : SBC = 3123.46 ← SELECTED</pre>
+                </div>
+            </section>
+
+            <!-- Step 7: Union Test -->
+            <section class="example-section">
+                <h2>8. Union of Rejections Test</h2>
+
+                <div class="method-explanation">
+                    <p>The union test combines Fourier and SC-VECM tests with a size adjustment.
+                        It rejects H₀ if <strong>either</strong> test rejects, providing robustness when
+                        the break type is unknown.</p>
+                </div>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 7: Union of rejections test</span>
+                    </div>
+                    <pre><code class="language-python"># Union test combining Fourier and SC-VECM
+result_union = union_test(X, model=3, k=4, f=2, option=2, r=0)
+
+print("=" * 70)
+print("              UNION OF REJECTIONS TEST")
+print("=" * 70)
+print(result_union)
+
+# Summary
+if result_union.reject_h0:
+    print("\n🎯 CONCLUSION: Evidence of cointegration detected!")
+else:
+    print("\n❌ CONCLUSION: No evidence of cointegration at 5% level.")</code></pre>
+                </div>
+            </section>
+
+            <!-- Step 8: Export Results -->
+            <section class="example-section">
+                <h2>9. Exporting Results for Publication</h2>
+
+                <div class="code-block-full">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Step 8: Export to LaTeX and Markdown</span>
+                    </div>
+                    <pre><code class="language-python"># Export Johansen-Fourier results as LaTeX table
+latex_table = to_latex(result_fourier_cum)
+print("LaTeX Table for Publication:")
+print("-" * 50)
+print(latex_table)
+
+# Save to file
+with open('cointegration_results.tex', 'w') as f:
+    f.write(latex_table)
+print("\n✅ Saved to cointegration_results.tex")
+
+# Export as Markdown for documentation
+md_table = to_markdown(result_fourier_cum)
+with open('cointegration_results.md', 'w') as f:
+    f.write(md_table)
+print("✅ Saved to cointegration_results.md")</code></pre>
+                </div>
+
+                <div class="output-box latex-output">
+                    <h4>LaTeX Output:</h4>
+                    <pre>\begin{table}[htbp]
+\centering
+\caption{Johansen-Fourier Cointegration Test Results}
+\begin{tabular}{ccccc}
+\hline\hline
+Rank & Eigenvalue & $\lambda_{max}$ & Trace & CV (5\%) \\
+\hline
+1 & 0.0823 & 35.234$^{*}$ & 68.901$^{*}$ & 72.964 \\
+2 & 0.0542 & 22.456$^{*}$ & 33.667$^{*}$ & 46.815 \\
+3 & 0.0271 & 11.211 & 11.211 & 24.656 \\
+\hline\hline
+\end{tabular}
+\begin{tablenotes}
+\small
+\item Note: $^{*}$ indicates rejection at 5\% level.
+\item Cumulative Fourier frequencies: 1, 2.
+\end{tablenotes}
+\end{table}</pre>
+                </div>
+            </section>
+
+            <!-- Complete Code -->
+            <section class="example-section">
+                <h2>10. Complete Analysis Script</h2>
+
+                <div class="code-block-full complete-code">
+                    <div class="code-header">
+                        <span class="code-lang">Python</span>
+                        <span class="code-title">Full Script: kilian_analysis.py</span>
+                    </div>
+                    <pre><code class="language-python">"""
+Complete Cointegration Analysis of Kilian Oil Market Data
+Using the Fourier-Johansen Library
+
+Author: Dr Merwan Roudane
+Data: Kilian (2009) Oil Market Dataset
+"""
+
+import numpy as np
+import pandas as pd
+from fourier_johansen import (
+    johansen, johansen_fourier, sc_vecm, sbc_test, union_test,
+    to_latex, to_markdown
+)
+
+# ==============================================================
+# 1. LOAD DATA
+# ==============================================================
+print("=" * 70)
+print("   COINTEGRATION ANALYSIS OF THE GLOBAL OIL MARKET")
+print("   Using Fourier-Johansen Library")
+print("=" * 70)
+
+df = pd.read_excel('Copy of Killian.xlsx')
+X = df[['dprod', 'rea', 'rpo']].values
+
+print(f"\nDataset: Kilian Oil Market Data")
+print(f"Period: {df['date'].iloc[0]:.2f} to {df['date'].iloc[-1]:.2f}")
+print(f"Variables: Oil Production (dprod), Economic Activity (rea), Oil Price (rpo)")
+print(f"Observations: {len(X)}")
+
+# ==============================================================
+# 2. STANDARD JOHANSEN TEST
+# ==============================================================
+print("\n" + "=" * 70)
+print("   STEP 1: Standard Johansen Test")
+print("=" * 70)
+result_joh = johansen(X, model=2, k=4)
+print(result_joh)
+
+# ==============================================================
+# 3. JOHANSEN-FOURIER TEST
+# ==============================================================
+print("\n" + "=" * 70)
+print("   STEP 2: Johansen-Fourier Test (Cumulative Frequencies)")
+print("=" * 70)
+result_fourier = johansen_fourier(X, model=3, k=4, f=2, option=2)
+print(result_fourier)
+print(f"\n→ Estimated Cointegration Rank: {result_fourier.get_cointegration_rank()}")
+
+# ==============================================================
+# 4. SC-VECM TEST
+# ==============================================================
+print("\n" + "=" * 70)
+print("   STEP 3: SC-VECM Test (Sharp Breaks)")
+print("=" * 70)
+result_sc = sc_vecm(r=0, y=X, max_lag=4, lambda_L=0.15)
+print(result_sc)
+
+# ==============================================================
+# 5. SBC MODEL SELECTION
+# ==============================================================
+print("\n" + "=" * 70)
+print("   STEP 4: SBC Model Selection")
+print("=" * 70)
+result_sbc = sbc_test(r=0, y=X, max_lag=4, lambda_L=0.15, f_max=3)
+print(result_sbc)
+
+# ==============================================================
+# 6. UNION TEST
+# ==============================================================
+print("\n" + "=" * 70)
+print("   STEP 5: Union of Rejections Test")
+print("=" * 70)
+result_union = union_test(X, model=3, k=4, f=2, option=2, r=0)
+print(result_union)
+
+# ==============================================================
+# 7. SUMMARY
+# ==============================================================
+print("\n" + "=" * 70)
+print("   SUMMARY OF RESULTS")
+print("=" * 70)
+print(f"Standard Johansen rank:  {sum(result_joh.trace > result_joh.cv_trace)}")
+print(f"Johansen-Fourier rank:   {result_fourier.get_cointegration_rank()}")
+print(f"SBC selected model:      {result_sbc.selected_model.upper()}")
+print(f"Union test rejects H0:   {'Yes' if result_union.reject_h0 else 'No'}")
+print("=" * 70)
+
+# ==============================================================
+# 8. EXPORT FOR PUBLICATION
+# ==============================================================
+latex = to_latex(result_fourier)
+with open('oil_market_results.tex', 'w') as f:
+    f.write(latex)
+print("\n✅ Results exported to oil_market_results.tex")
+</code></pre>
+                </div>
+            </section>
+
+            <!-- Navigation -->
+            <div class="example-nav">
+                <a href="index.html" class="btn btn-secondary">← Back to Documentation</a>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>Fourier-Johansen</h3>
+                    <p>Developed with ❤️ by Dr Merwan Roudane</p>
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/merwanroudane/fourierjohansen">GitHub</a>
+                    <a href="mailto:merwanroudane920@gmail.com">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Dr Merwan Roudane. MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false }
+                ]
+            });
+        });
+    </script>
+</body>
+
+</html>

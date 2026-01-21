@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fourier-Johansen Library | Cointegration Tests with Fourier Functions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge">Version 0.0.1</div>
+                <h1>Fourier-Johansen</h1>
+                <p class="subtitle">Johansen-type Cointegration Tests with a Fourier Function</p>
+                <p class="description">
+                    A Python library implementing cointegration tests that capture unknown structural breaks
+                    using trigonometric (Fourier) functions. Based on the methodology of
+                    <strong>Pascalau, Lee, Nazlioglu & Lu (2022)</strong>.
+                </p>
+                <div class="cta-buttons">
+                    <a href="#installation" class="btn btn-primary">Get Started</a>
+                    <a href="example-kilian.html" class="btn btn-secondary">Real Data Example</a>
+                    <a href="https://github.com/merwanroudane/fourierjohansen" class="btn btn-secondary">View on
+                        GitHub</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="formula-card">
+                    <div class="math-display">
+                        $$f_t = \sum_{j=1}^{n} \left[ A_j \cos\left(\frac{2\pi j t}{T}\right) + B_j \sin\left(\frac{2\pi
+                        j t}{T}\right) \right]$$
+                    </div>
+                    <p class="formula-caption">The Fourier Function for Capturing Structural Breaks</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Author Section -->
+    <section class="author-section">
+        <div class="container">
+            <div class="author-card">
+                <div class="author-avatar">
+                    <span>MR</span>
+                </div>
+                <div class="author-info">
+                    <h3>Dr Merwan Roudane</h3>
+                    <p>Developer & Maintainer</p>
+                    <div class="author-links">
+                        <a href="mailto:merwanroudane920@gmail.com">merwanroudane920@gmail.com</a>
+                        <a href="https://github.com/merwanroudane/fourierjohansen">GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <div class="container">
+            <ul class="nav-links">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#methodology">Methodology</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#functions">Functions</a></li>
+                <li><a href="#examples">Examples</a></li>
+                <li><a href="#results">Results</a></li>
+                <li><a href="#citation">Citation</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Overview Section -->
+    <section id="overview" class="section">
+        <div class="container">
+            <h2 class="section-title">Overview</h2>
+            <div class="overview-grid">
+                <div class="overview-card">
+                    <div class="card-icon">📊</div>
+                    <h3>Cointegration Testing</h3>
+                    <p>Extends the pioneering Johansen (1991) cointegration test to handle systems with structural
+                        breaks of unknown form.</p>
+                </div>
+                <div class="overview-card">
+                    <div class="card-icon">🔄</div>
+                    <h3>Fourier Approximation</h3>
+                    <p>Uses trigonometric functions to capture smooth structural changes without knowing break dates or
+                        magnitudes.</p>
+                </div>
+                <div class="overview-card">
+                    <div class="card-icon">📈</div>
+                    <h3>Multiple Test Types</h3>
+                    <p>Includes standard Johansen, Johansen-Fourier, SC-VECM for sharp breaks, SBC model selection, and
+                        union tests.</p>
+                </div>
+                <div class="overview-card">
+                    <div class="card-icon">📄</div>
+                    <h3>Publication Ready</h3>
+                    <p>Export results as LaTeX or Markdown tables suitable for academic journals.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Methodology Section -->
+    <section id="methodology" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Methodology</h2>
+
+            <div class="method-block">
+                <h3>1. The Standard Johansen Framework</h3>
+                <p>The Johansen (1991) cointegration test is based on the Vector Error Correction Model (VECM):</p>
+                <div class="math-block">
+                    $$\Delta X_t = \Pi X_{t-k} + \sum_{i=1}^{k-1} \Gamma_i \Delta X_{t-i} + \mu + \varepsilon_t$$
+                </div>
+                <p>where <span class="math-inline">$\Pi = \alpha\beta'$</span> has reduced rank <span
+                        class="math-inline">$r < p$</span>,
+                            and <span class="math-inline">$\beta$</span> contains the cointegrating vectors.</p>
+            </div>
+
+            <div class="method-block">
+                <h3>2. The Fourier Extension</h3>
+                <p>The key innovation is adding a Fourier function <span class="math-inline">$f_t$</span> to capture
+                    structural breaks:</p>
+                <div class="math-block">
+                    $$\Delta X_t = \Pi X_{t-k} + \sum_{i=1}^{k-1} \Gamma_i \Delta X_{t-i} + \mu + f_t + \varepsilon_t$$
+                </div>
+                <p>The Fourier function can take two forms:</p>
+
+                <div class="two-column">
+                    <div class="column">
+                        <h4>Single Frequency</h4>
+                        <div class="math-block small">
+                            $$f_t = A \cos\left(\frac{2\pi f t}{T}\right) + B \sin\left(\frac{2\pi f t}{T}\right)$$
+                        </div>
+                        <p class="note">Use when break form is known or simple.</p>
+                    </div>
+                    <div class="column">
+                        <h4>Cumulative Frequencies</h4>
+                        <div class="math-block small">
+                            $$f_t = \sum_{j=1}^{n} \left[ A_j \cos\left(\frac{2\pi j t}{T}\right) + B_j
+                            \sin\left(\frac{2\pi j t}{T}\right) \right]$$
+                        </div>
+                        <p class="note">Recommended when break form is unknown.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="method-block">
+                <h3>3. Test Statistics</h3>
+                <p>Two likelihood ratio statistics are computed:</p>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Trace Statistic</h4>
+                        <div class="math-block">
+                            $$LR_{trace}(r) = -T \sum_{i=r+1}^{p} \ln(1 - \hat{\lambda}_i)$$
+                        </div>
+                        <p>Tests H₀: rank ≤ r vs H₁: rank > r</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Lambda-max Statistic</h4>
+                        <div class="math-block">
+                            $$\lambda_{max}(r) = -T \ln(1 - \hat{\lambda}_{r+1})$$
+                        </div>
+                        <p>Tests H₀: rank = r vs H₁: rank = r+1</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="method-block">
+                <h3>4. Model Specifications</h3>
+                <table class="model-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Description</th>
+                            <th>When to Use</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>model=1</code></td>
+                            <td>Constant (Unrestricted)</td>
+                            <td>General case with constant in VAR</td>
+                        </tr>
+                        <tr>
+                            <td><code>model=2</code></td>
+                            <td>Trend (Unrestricted)</td>
+                            <td>Data with linear trends</td>
+                        </tr>
+                        <tr class="highlight">
+                            <td><code>model=3</code></td>
+                            <td>Restricted Constant (RC)</td>
+                            <td><strong>Most common</strong> - constant in cointegrating eq. only</td>
+                        </tr>
+                        <tr>
+                            <td><code>model=4</code></td>
+                            <td>Restricted Trend (RT)</td>
+                            <td>Trend in cointegrating relationship</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section id="installation" class="section">
+        <div class="container">
+            <h2 class="section-title">Installation</h2>
+
+            <div class="install-steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Install via pip</h3>
+                        <div class="code-block">
+                            <code>pip install fourier-johansen</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Or install from source</h3>
+                        <div class="code-block">
+                            <code>git clone https://github.com/merwanroudane/fourierjohansen.git
+cd fourierjohansen
+pip install -e .</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Verify installation</h3>
+                        <div class="code-block">
+                            <code>python -c "from fourier_johansen import johansen_fourier; print('Success!')"</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="requirements">
+                <h3>Requirements</h3>
+                <ul>
+                    <li>Python ≥ 3.8</li>
+                    <li>NumPy ≥ 1.20.0</li>
+                    <li>SciPy ≥ 1.7.0</li>
+                    <li>Pandas ≥ 1.3.0</li>
+                    <li>Tabulate ≥ 0.8.9</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Functions Section -->
+    <section id="functions" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Available Functions</h2>
+
+            <div class="function-grid">
+                <div class="function-card">
+                    <div class="function-header">
+                        <h3>johansen()</h3>
+                        <span class="function-badge">Standard Test</span>
+                    </div>
+                    <p>Standard Johansen (1991) cointegration test without structural breaks.</p>
+                    <div class="function-signature">
+                        <code>johansen(x, model=2, k=2)</code>
+                    </div>
+                    <div class="function-params">
+                        <p><strong>Parameters:</strong></p>
+                        <ul>
+                            <li><code>x</code>: T × m data matrix</li>
+                            <li><code>model</code>: 1-5 for deterministic specification</li>
+                            <li><code>k</code>: Number of VAR lags</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="function-card featured">
+                    <div class="function-header">
+                        <h3>johansen_fourier()</h3>
+                        <span class="function-badge primary">Main Test</span>
+                    </div>
+                    <p>Johansen-Fourier test with trigonometric functions for smooth structural breaks.</p>
+                    <div class="function-signature">
+                        <code>johansen_fourier(x, model=3, k=2, f=1, option=1)</code>
+                    </div>
+                    <div class="function-params">
+                        <p><strong>Parameters:</strong></p>
+                        <ul>
+                            <li><code>x</code>: T × m data matrix</li>
+                            <li><code>model</code>: 1-4 for deterministic specification</li>
+                            <li><code>k</code>: Number of VAR lags</li>
+                            <li><code>f</code>: Fourier frequency (1-5)</li>
+                            <li><code>option</code>: 1=single, 2=cumulative</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="function-card">
+                    <div class="function-header">
+                        <h3>sc_vecm()</h3>
+                        <span class="function-badge">Sharp Breaks</span>
+                    </div>
+                    <p>SC-VECM test for sharp/discrete structural breaks (Harris et al. 2016).</p>
+                    <div class="function-signature">
+                        <code>sc_vecm(r, y, max_lag=4, lambda_L=0.1)</code>
+                    </div>
+                    <div class="function-params">
+                        <p><strong>Parameters:</strong></p>
+                        <ul>
+                            <li><code>r</code>: Rank to test</li>
+                            <li><code>y</code>: T × m data matrix</li>
+                            <li><code>max_lag</code>: Maximum lag</li>
+                            <li><code>lambda_L</code>: Trimming rate</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="function-card">
+                    <div class="function-header">
+                        <h3>sbc_test()</h3>
+                        <span class="function-badge">Model Selection</span>
+                    </div>
+                    <p>SBC-based model selection among Johansen, SC-VECM, and Fourier models.</p>
+                    <div class="function-signature">
+                        <code>sbc_test(r, y, max_lag=4, lambda_L=0.1, f_max=3, option=2)</code>
+                    </div>
+                </div>
+
+                <div class="function-card">
+                    <div class="function-header">
+                        <h3>union_test()</h3>
+                        <span class="function-badge">Combined Test</span>
+                    </div>
+                    <p>Union of rejections combining Fourier and SC-VECM tests with size adjustment.</p>
+                    <div class="function-signature">
+                        <code>union_test(x, model=3, k=2, f=2, option=2, r=0)</code>
+                    </div>
+                </div>
+
+                <div class="function-card">
+                    <div class="function-header">
+                        <h3>to_latex() / to_markdown()</h3>
+                        <span class="function-badge">Export</span>
+                    </div>
+                    <p>Export test results as publication-ready LaTeX or Markdown tables.</p>
+                    <div class="function-signature">
+                        <code>to_latex(result)</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Examples Section -->
+    <section id="examples" class="section">
+        <div class="container">
+            <h2 class="section-title">Step-by-Step Examples</h2>
+
+            <div class="example-block">
+                <h3>Example 1: Basic Johansen-Fourier Test</h3>
+                <div class="code-example">
+                    <pre><code class="language-python">import numpy as np
+from fourier_johansen import johansen_fourier
+
+# Generate sample data with smooth structural break
+np.random.seed(42)
+T = 200
+t = np.arange(T)
+
+# Create cointegrated series with Fourier break
+break_term = 3 * np.sin(2 * np.pi * t / T)
+x1 = np.cumsum(np.random.randn(T)) + break_term
+x2 = x1 + np.random.randn(T) * 0.5 + break_term * 0.8
+X = np.column_stack([x1, x2])
+
+# Run Johansen-Fourier test
+result = johansen_fourier(X, model=3, k=2, f=1, option=1)
+
+# Display results
+print(result)
+
+# Get cointegration rank
+rank = result.get_cointegration_rank()
+print(f"\nEstimated cointegration rank: {rank}")</code></pre>
+                </div>
+                <div class="example-output">
+                    <h4>Output:</h4>
+                    <pre>===========================================================================
+           Johansen-Fourier Cointegration Test Results
+===========================================================================
+ # Variables : 2
+ Model       : Restricted Constant (RC)
+ Frequency   : 1 (Single)
+ VAR Lags    : 2
+ Observations: 197
+---------------------------------------------------------------------------
+  Rank       Fourier       Fourier      CV(5%)      CV(5%)       Log-Lik
+              Lambda         Trace      Lambda       Trace              
+---------------------------------------------------------------------------
+     0                                                          -856.234
+     1       28.591*       57.342*     22.195      29.586       228.713
+     2       20.404        28.751      14.742      14.743       233.537
+===========================================================================
+Note: * indicates rejection of null at 5% level
+
+Estimated cointegration rank: 1</pre>
+                </div>
+            </div>
+
+            <div class="example-block">
+                <h3>Example 2: Comparing Single vs Cumulative Frequencies</h3>
+                <div class="code-example">
+                    <pre><code class="language-python">from fourier_johansen import johansen_fourier
+
+# Single frequency (known break form)
+result_single = johansen_fourier(X, model=3, k=2, f=1, option=1)
+print("Single Frequency (f=1):")
+print(f"  Trace stats: {result_single.trace}")
+print(f"  CV (5%):     {result_single.cv_trace}")
+
+# Cumulative frequencies (unknown break form)
+result_cum = johansen_fourier(X, model=3, k=2, f=2, option=2)
+print("\nCumulative Frequencies (f=1,2):")
+print(f"  Trace stats: {result_cum.trace}")
+print(f"  CV (5%):     {result_cum.cv_trace}")</code></pre>
+                </div>
+            </div>
+
+            <div class="example-block">
+                <h3>Example 3: Model Selection with SBC</h3>
+                <div class="code-example">
+                    <pre><code class="language-python">from fourier_johansen import sbc_test
+
+# Automatically select best model
+result = sbc_test(r=0, y=X, max_lag=4, f_max=3)
+
+print(f"Selected model: {result.selected_model}")
+print(f"Trace statistic: {result.trace:.4f}")
+print(f"Critical value: {result.cv:.4f}")
+print(f"\nAll SBC values:")
+for model, sbc in result.all_sbc.items():
+    print(f"  {model}: {sbc:.4f}")</code></pre>
+                </div>
+            </div>
+
+            <div class="example-block">
+                <h3>Example 4: Export Results for Publication</h3>
+                <div class="code-example">
+                    <pre><code class="language-python">from fourier_johansen import johansen_fourier, to_latex, to_markdown
+
+result = johansen_fourier(X, model=3, k=2, f=1, option=1)
+
+# Export as LaTeX
+latex_table = to_latex(result)
+print("LaTeX Table:")
+print(latex_table)
+
+# Export as Markdown
+md_table = to_markdown(result)
+print("\nMarkdown Table:")
+print(md_table)</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title">Understanding Results</h2>
+
+            <div class="results-guide">
+                <div class="result-card">
+                    <h3>How to Interpret the Output</h3>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Column</th>
+                                <th>Description</th>
+                                <th>Interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Rank</strong></td>
+                                <td>Null hypothesis rank</td>
+                                <td>H₀: r ≤ rank value</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Eigenvalue</strong></td>
+                                <td>Ordered eigenvalues</td>
+                                <td>Larger values suggest cointegration</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Lambda-max</strong></td>
+                                <td>λ-max test statistic</td>
+                                <td>Compare with CV for decision</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Trace</strong></td>
+                                <td>Trace test statistic</td>
+                                <td>Reject H₀ if Trace > CV</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CV(5%)</strong></td>
+                                <td>5% critical value</td>
+                                <td>From simulation tables</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="result-card">
+                    <h3>Decision Rule</h3>
+                    <div class="decision-box">
+                        <p><strong>Step 1:</strong> Start with rank = 0 (no cointegration)</p>
+                        <p><strong>Step 2:</strong> If Trace > CV → reject H₀, test next rank</p>
+                        <p><strong>Step 3:</strong> If Trace ≤ CV → accept H₀, rank found</p>
+                        <p><strong>Step 4:</strong> The first non-rejection gives the estimated rank</p>
+                    </div>
+                </div>
+
+                <div class="result-card">
+                    <h3>When to Use Each Test</h3>
+                    <div class="use-cases">
+                        <div class="use-case">
+                            <h4>Use <code>johansen()</code> when:</h4>
+                            <ul>
+                                <li>No structural breaks expected</li>
+                                <li>Baseline comparison needed</li>
+                            </ul>
+                        </div>
+                        <div class="use-case">
+                            <h4>Use <code>johansen_fourier()</code> when:</h4>
+                            <ul>
+                                <li>Smooth structural breaks suspected</li>
+                                <li>Break dates unknown</li>
+                                <li>Multiple gradual changes possible</li>
+                            </ul>
+                        </div>
+                        <div class="use-case">
+                            <h4>Use <code>sc_vecm()</code> when:</h4>
+                            <ul>
+                                <li>Sharp/discrete breaks suspected</li>
+                                <li>Single abrupt change in trend</li>
+                            </ul>
+                        </div>
+                        <div class="use-case">
+                            <h4>Use <code>sbc_test()</code> when:</h4>
+                            <ul>
+                                <li>Uncertain about break type</li>
+                                <li>Want automatic model selection</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Citation Section -->
+    <section id="citation" class="section">
+        <div class="container">
+            <h2 class="section-title">Citation</h2>
+
+            <div class="citation-block">
+                <h3>If you use this library, please cite:</h3>
+                <div class="bibtex">
+                    <pre>@article{pascalau2022johansen,
+  title={Johansen-type cointegration tests with a Fourier function},
+  author={Pascalau, Razvan and Lee, Junsoo and Nazlioglu, Saban 
+          and Lu, Yan Olivia},
+  journal={Journal of Time Series Analysis},
+  volume={43},
+  number={5},
+  pages={828--852},
+  year={2022},
+  publisher={Wiley},
+  doi={10.1111/jtsa.12640}
+}</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>Fourier-Johansen</h3>
+                    <p>Developed with ❤️ by Dr Merwan Roudane</p>
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/merwanroudane/fourierjohansen">GitHub</a>
+                    <a href="mailto:merwanroudane920@gmail.com">Contact</a>
+                    <a href="https://doi.org/10.1111/jtsa.12640">Paper</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Dr Merwan Roudane. MIT License.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Render KaTeX math
+        document.addEventListener("DOMContentLoaded", function () {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    { left: "$$", right: "$$", display: true },
+                    { left: "$", right: "$", display: false }
+                ]
+            });
+        });
+
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Sticky navigation
+        window.addEventListener('scroll', function () {
+            const nav = document.querySelector('.main-nav');
+            if (window.scrollY > 500) {
+                nav.classList.add('sticky');
+            } else {
+                nav.classList.remove('sticky');
+            }
+        });
+    </script>
+</body>
+
+</html>
